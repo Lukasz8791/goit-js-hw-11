@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+.info {
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  display: flex;
+  font-size: 10px;
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+.photo-card img {
+  width: 300px;
+  height: 240px;
+  justify-content: center;
+}
+
+.gallery {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  row-gap: 12px;
+  column-gap: 12px;
+}
+.photo-card {
+  flex-basis: calc((100% - 48px) / 4);
+}
