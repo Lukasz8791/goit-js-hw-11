@@ -1,64 +1,63 @@
-import axios from 'axios';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+let lightbox;
+
+const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
 
 const searchForm = document.getElementById('search-form');
-const galleryContainer = document.querySelector('.gallery');
+const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
-
 let page = 1;
 
-searchForm.addEventListener('submit', async e => {
-  e.preventDefault();
-  const searchQuery = e.target.elements.searchQuery.value.trim();
+searchForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
 
-  if (!searchQuery) {
-    return;
+  const searchQuery = event.target.searchQuery.value.trim();
+
+  if (searchQuery !== '') {
+    clearGallery();
+    page = 1;
+
+    const images = await fetchImages(searchQuery, page);
+
+    if (images.length > 0) {
+      displayImages(images);
+      showLoadMoreButton();
+      showNotification(`Hooray! We found ${images.length} images.`);
+    } else {
+      showNotification(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    }
   }
+});
 
-  clearGallery();
-  page = 1;
+loadMoreBtn.addEventListener('click', async function () {
+  page++;
+  const searchQuery = searchForm.searchQuery.value.trim();
+  const images = await fetchImages(searchQuery, page);
+
+  if (images.length > 0) {
+    displayImages(images);
+  } else {
+    hideLoadMoreButton();
+    showNotification(
+      "We're sorry, but you've reached the end of search results."
+    );
+  }
+});
+
+async function fetchImages(query, page) {
+  const url = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`;
 
   try {
-    const images = await fetchImages(searchQuery, page);
-    console.log(images);
-    displayImages(images);
-    showLoadMoreButton(images.length);
-    //  showNotification(`Hooray! We found ${images.length} images.`);
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.hits;
   } catch (error) {
     console.error('Error fetching images:', error);
-    showNotification('Oops! Something went wrong. Please try again later.');
+    return [];
   }
-});
-
-loadMoreBtn.addEventListener('click', async () => {
-  page++;
-
-  const searchQuery = searchForm.elements.searchQuery.value.trim();
-
-  try {
-    const images = await fetchImages(searchQuery, page);
-    displayImages(images);
-    showLoadMoreButton(images.length);
-    smoothScroll();
-  } catch (error) {
-    console.error('Error fetching more images:', error);
-    showNotification('Oops! Something went wrong. Please try again later.');
-  }
-});
-
-function fetchImages(query, currentPage) {
-  const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
-  const perPage = 40;
-
-  const apiUrl = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${currentPage}&per_page=${perPage}`;
-
-  return axios
-    .get(apiUrl)
-    .then(response => response.data.hits)
-    .catch(error => {
-      throw error;
-    });
 }
 
 function displayImages(images) {
@@ -69,24 +68,19 @@ function displayImages(images) {
     fragment.appendChild(card);
   });
 
-  galleryContainer.appendChild(fragment);
-
-  // Initialize SimpleLightbox for new images
-  const lightbox = new SimpleLightbox('.gallery a', {
-    captionsData: 'alt',
-    captionDelay: 250,
-  });
-
-  lightbox.refresh();
+  gallery.appendChild(fragment);
+  refreshLightbox();
 }
 
 function createImageCard(image) {
+  console.log(image);
   const card = document.createElement('div');
   card.classList.add('photo-card');
 
   const img = document.createElement('img');
   img.src = image.webformatURL;
   img.alt = image.tags;
+  //img.href = image.largeImageURL;
   img.loading = 'lazy';
 
   const info = document.createElement('div');
@@ -97,34 +91,38 @@ function createImageCard(image) {
   infoItems.forEach(item => {
     const p = document.createElement('p');
     p.classList.add('info-item');
-    p.innerHTML = `<b>${item}</b>${image[item.toLowerCase()] || 0}`;
+    p.innerHTML = `<b>${item}</b>${image[item.toLowerCase()]}`;
     info.appendChild(p);
   });
 
+  card.innerHTML = '<a href=' + image.largeImageURL + '>';
   card.appendChild(img);
+  card.innerHTML += '</a>';
   card.appendChild(info);
 
   return card;
 }
 
 function clearGallery() {
-  galleryContainer.innerHTML = '';
+  gallery.innerHTML = '';
 }
 
-function showLoadMoreButton(imagesCount) {
-  loadMoreBtn.style.display = imagesCount === 0 ? 'none' : 'block';
+function showLoadMoreButton() {
+  loadMoreBtn.style.display = 'block';
 }
 
-function smoothScroll() {
-  const { height: cardHeight } =
-    galleryContainer.firstElementChild.getBoundingClientRect();
-
-  window.scrollBy({
-    top: cardHeight * 2,
-    behavior: 'smooth',
-  });
+function hideLoadMoreButton() {
+  loadMoreBtn.style.display = 'none';
 }
 
-//function showNotification(message) {
-// notiflix.Notify.success(message);
-//}
+function showNotification(message) {
+  //  Notiflix.Notify.success(message);
+}
+
+function refreshLightbox() {
+  if (lightbox) {
+    lightbox.refresh();
+  } else {
+    lightbox = new SimpleLightbox('.photo-card a');
+  }
+}

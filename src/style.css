@@ -2,6 +2,13 @@ body {
   margin: 0;
   padding: 0;
 }
+.search-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  background-color: blue;
+}
 .info {
   align-items: center;
   justify-content: center;
@@ -25,6 +32,7 @@ body {
   flex-wrap: wrap;
   row-gap: 12px;
   column-gap: 12px;
+  padding: 20px 0;
 }
 .photo-card {
   flex-basis: calc((100% - 48px) / 4);
