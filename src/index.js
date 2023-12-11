@@ -1,7 +1,7 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 let lightbox;
-
+import Notiflix from 'notiflix';
 const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
 
 const searchForm = document.getElementById('search-form');
@@ -26,7 +26,8 @@ searchForm.addEventListener('submit', async function (event) {
       showNotification(`Hooray! We found ${images.length} images.`);
     } else {
       showNotification(
-        'Sorry, there are no images matching your search query. Please try again.'
+        'Sorry, there are no images matching your search query. Please try again.',
+        true
       );
     }
   }
@@ -42,7 +43,8 @@ loadMoreBtn.addEventListener('click', async function () {
   } else {
     hideLoadMoreButton();
     showNotification(
-      "We're sorry, but you've reached the end of search results."
+      "We're sorry, but you've reached the end of search results.",
+      true
     );
   }
 });
@@ -73,16 +75,19 @@ function displayImages(images) {
 }
 
 function createImageCard(image) {
-  console.log(image);
   const card = document.createElement('div');
   card.classList.add('photo-card');
+
+  const a = document.createElement('a');
+  a.href = image.largeImageURL;
+  a.setAttribute('data-lightbox', 'photos');
 
   const img = document.createElement('img');
   img.src = image.webformatURL;
   img.alt = image.tags;
-  //img.href = image.largeImageURL;
   img.loading = 'lazy';
 
+  a.appendChild(img);
   const info = document.createElement('div');
   info.classList.add('info');
 
@@ -95,9 +100,7 @@ function createImageCard(image) {
     info.appendChild(p);
   });
 
-  card.innerHTML = '<a href=' + image.largeImageURL + '>';
-  card.appendChild(img);
-  card.innerHTML += '</a>';
+  card.appendChild(a);
   card.appendChild(info);
 
   return card;
@@ -115,8 +118,12 @@ function hideLoadMoreButton() {
   loadMoreBtn.style.display = 'none';
 }
 
-function showNotification(message) {
-  //  Notiflix.Notify.success(message);
+function showNotification(message, failure) {
+  if (failure == true) {
+    Notiflix.Notify.failure(message);
+  } else {
+    Notiflix.Notify.success(message);
+  }
 }
 
 function refreshLightbox() {
