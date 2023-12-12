@@ -1,13 +1,13 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+let lightbox;
 import Notiflix from 'notiflix';
-
 const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
+
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 let page = 1;
-let allImages = [];
 
 searchForm.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -17,60 +17,76 @@ searchForm.addEventListener('submit', async function (event) {
   if (searchQuery !== '') {
     clearGallery();
     page = 1;
-    allImages = [];
 
-    await fetchAndDisplayImages(searchQuery);
+    const { images, totalHits } = await fetchImages(searchQuery, page);
+
+    if (images.length > 0) {
+      displayImages({ images, totalHits });
+      showLoadMoreButton();
+      showNotification(`Hooray! We found ${totalHits} images.`);
+    } else {
+      showNotification(
+        'Sorry, there are no images matching your search query. Please try again.',
+        true
+      );
+    }
   }
 });
 
 loadMoreBtn.addEventListener('click', async function () {
   page++;
   const searchQuery = searchForm.searchQuery.value.trim();
-
-  await fetchAndDisplayImages(searchQuery);
-});
-
-async function fetchImages(query, page) {
-  const url = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=20`;
-
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    return { totalHits: data.totalHits, hits: data.hits };
-  } catch (error) {
-    console.error('Error fetching images:', error);
-    return { totalHits: 0, hits: [] };
-  }
-}
-
-async function fetchAndDisplayImages(query) {
-  const { totalHits, hits: images } = await fetchImages(query, page);
+  const { images, totalHits } = await fetchImages(searchQuery, page);
 
   if (images.length > 0) {
-    allImages = [...allImages, ...images];
-    displayImages(allImages);
-    showLoadMoreButton();
-    showNotification('Hooray! We found images.', totalHits);
+    displayImages({ images, totalHits });
   } else {
     hideLoadMoreButton();
     showNotification(
       "We're sorry, but you've reached the end of search results.",
-      totalHits,
       true
     );
   }
+});
+
+async function fetchImages(query, page) {
+  const url = `https://pixabay.com/api/?key=${apiKey}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&page=${page}&per_page=40`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log('Total Hits:', data.totalHits);
+
+    return {
+      images: data.hits,
+      totalHits: data.totalHits,
+    };
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    return {
+      images: [],
+      totalHits: 0,
+    };
+  }
 }
 
-function displayImages(images) {
-  const fragment = document.createDocumentFragment();
+function displayImages(data) {
+  const images = data.images;
 
-  images.forEach(image => {
-    const card = createImageCard(image);
-    fragment.appendChild(card);
-  });
+  if (images && Array.isArray(images) && images.length > 0) {
+    const fragment = document.createDocumentFragment();
 
-  gallery.appendChild(fragment);
-  refreshLightbox();
+    images.forEach(image => {
+      const card = createImageCard(image);
+      fragment.appendChild(card);
+    });
+
+    gallery.appendChild(fragment);
+    refreshLightbox();
+  } else {
+    hideLoadMoreButton();
+    showNotification("We're sorry, but there are no images to display.", true);
+  }
 }
 
 function createImageCard(image) {
@@ -117,11 +133,11 @@ function hideLoadMoreButton() {
   loadMoreBtn.style.display = 'none';
 }
 
-function showNotification(message, totalHits, failure) {
+function showNotification(message, failure) {
   if (failure == true) {
     Notiflix.Notify.failure(message);
   } else {
-    Notiflix.Notify.success(`${message} Total hits: ${totalHits}`);
+    Notiflix.Notify.success(message);
   }
 }
 
