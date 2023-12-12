@@ -1,13 +1,14 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-let lightbox;
 import Notiflix from 'notiflix';
-const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
 
+const apiKey = '41083655-82ce4b08f1604d0cb0165a8b6';
 const searchForm = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
+let lightbox;
 let page = 1;
+let hasMoreResults = true;
 
 searchForm.addEventListener('submit', async function (event) {
   event.preventDefault();
@@ -47,6 +48,16 @@ loadMoreBtn.addEventListener('click', async function () {
       true
     );
   }
+
+  // Sprawdź, czy są więcej wyników do załadowania
+  if (totalHits <= page * 40) {
+    hasMoreResults = false;
+    hideLoadMoreButton();
+    showNotification(
+      "We're sorry, but you've reached the end of search results.",
+      true
+    );
+  }
 });
 
 async function fetchImages(query, page) {
@@ -55,6 +66,10 @@ async function fetchImages(query, page) {
   try {
     const response = await fetch(url);
     const data = await response.json();
+
+    // Zaktualizuj zmienną hasMoreResults na podstawie ilości dostępnych wyników
+    hasMoreResults = data.totalHits > page * 40;
+
     console.log('Total Hits:', data.totalHits);
 
     return {
@@ -126,7 +141,15 @@ function clearGallery() {
 }
 
 function showLoadMoreButton() {
-  loadMoreBtn.style.display = 'block';
+  if (hasMoreResults) {
+    loadMoreBtn.style.display = 'block';
+  } else {
+    hideLoadMoreButton();
+    showNotification(
+      "We're sorry, but you've reached the end of search results.",
+      true
+    );
+  }
 }
 
 function hideLoadMoreButton() {
